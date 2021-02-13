@@ -3,6 +3,7 @@ const router = express.Router()
 const auth = require('./../../middleware/auth')
 const Profile = require('./../../models/Profile')
 const User = require('./../../models/User')
+const Post = require('./../../models/Post')
 const { check, validationResult } = require('express-validator')
 
 router.get('/me', auth, async (req, res) => {
@@ -58,7 +59,7 @@ async (req, res) => {
     if (bio) profileFields.bio = bio
     if (status) profileFields.status = status
     if (githubusername) profileFields.githubusername = githubusername
-    if (skills) {
+    if (skills.length > 0) {
         profileFields.skills = skills.split(',').map(skill => skill.trim())
     }
     profileFields.social = {}
@@ -72,6 +73,7 @@ async (req, res) => {
         let profile = await Profile.findOne({ user: req.user.id })
 
         if (profile) {
+            //update
             profile = await Profile.findOneAndUpdate(
                 {user: req.user.id},
                 {$set: profileFields},
@@ -82,6 +84,7 @@ async (req, res) => {
         }
 
         profile = new Profile(profileFields)
+        console.log(profile)
         await profile.save()
         res.json(profile)
 
@@ -124,6 +127,7 @@ router.get('/user/:user_id', async (req, res) => {
 
 router.delete('/', auth, async (req, res) => {
     try {
+        await Post.deleteMany({ user: req.user.id })
         await User.findOneAndRemove({ _id: req.user.id })
         await Profile.findOneAndRemove({ user: req.user.id })
         res.json({ msg: 'User deleted' })
